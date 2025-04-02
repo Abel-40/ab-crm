@@ -1,0 +1,42 @@
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to ITDB</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="max-w-2xl mx-auto my-10 bg-white p-8 rounded-lg shadow-lg">
+      
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-blue-600">Welcome to ABCRM</h1>
+            <p class="mt-2 text-gray-600">Your Employee Management System</p>
+        </div>
+
+        <div class="mt-6">
+            <p class="text-gray-700">
+                Hello <span class="font-semibold">{{ username }}</span>,<br><br>
+                We are thrilled to have you join ITDB, your go-to platform for streamlined employee management, task tracking, and feedback systems. Our system is designed to enhance productivity, collaboration, and transparency across your organization.
+            </p>
+
+            <ul class="mt-4 list-disc list-inside text-gray-700">
+                <li><span class="font-semibold">Employee Management:</span> Easily manage employee roles, departments, and profiles.</li>
+                <li><span class="font-semibold">Task Tracking:</span> Assign and track tasks with deadlines and status updates.</li>
+                <li><span class="font-semibold">Feedback System:</span> Submit and review feedback to improve team performance.</li>
+                <li><span class="font-semibold">Performance Reviews:</span> Monitor employee and department performance with detailed metrics.</li>
+            </ul>
+
+            <div class="mt-6 text-center">
+                <a href="http://127.0.0.1:8000/" class="inline-block px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-300">
+                    Get Started Now
+                </a>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center text-sm text-gray-500">
+            © {{ current_year }} ITDB. All Rights Reserved.
+        </div>
+    </div>
+</body>
+</html>
