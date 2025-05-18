@@ -13,6 +13,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from utils.permissions import IsDepartmentLeader
 from django.shortcuts import get_object_or_404
+
 class TaskView(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'], permission_classes=[IsAdminUser])
@@ -36,6 +37,13 @@ class TaskView(viewsets.ViewSet):
 
     @action(detail=False, methods=['patch'], permission_classes=[IsDepartmentLeader])
     def update_task_status(self, request):
+        if not request.user.is_active:
+            return api_response(
+                message="Your account is inactive. Please contact admin.",
+                status_code=status.HTTP_403_FORBIDDEN,
+                success=False
+            )
+
         serializer = UpdateTaskSerializer(data=request.data)
         if serializer.is_valid():
             title = serializer.validated_data['title']
@@ -93,13 +101,20 @@ class TaskView(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'], permission_classes=[IsDepartmentLeader])
     def create_subtask(self, request):
+        if not request.user.is_active:
+            return api_response(
+                message="Your account is inactive. Please contact admin.",
+                status_code=status.HTTP_403_FORBIDDEN,
+                success=False
+            )
+
         serializer = CreateSubTaskSerializer(data=request.data)
         if serializer.is_valid():
             task = serializer.validated_data['task']
             department_leader = task.department.leader
             if not request.user == department_leader:
                 return api_response(
-                    message="your not  department leader for this department!!!",
+                    message="Your not department leader for this department!!!",
                     status_code=status.HTTP_400_BAD_REQUEST,
                     success=False
                 )              
@@ -119,13 +134,20 @@ class TaskView(viewsets.ViewSet):
 
     @action(detail=False, methods=['patch'], permission_classes=[IsAuthenticated])
     def update_subtask_status(self, request):
+        if not request.user.is_active:
+            return api_response(
+                message="Your account is inactive. Please contact admin.",
+                status_code=status.HTTP_403_FORBIDDEN,
+                success=False
+            )
+
         serializer = UpdateSubTaskSerializer(data=request.data)
         if serializer.is_valid():
             title = serializer.validated_data['title']
             task_title = serializer.validated_data['task_title']
             subtask_status = serializer.validated_data['status']
             subtask = SubTask.objects.filter(
-                task__title = task_title,title=title,
+                task__title = task_title, title=title,
             ).first()
             task = Task.objects.filter(title=task_title).first()
             if not task:
@@ -164,9 +186,9 @@ class TaskView(viewsets.ViewSet):
             success=False,
             errors=serializer.errors
         )
+        
     @action(detail=False, methods=['delete'], url_path="delete/(?P<task_id>\d+)", permission_classes=[IsAdminUser])
     def delete_task(self, request, task_id=None):
-        
         task = get_object_or_404(Task, id=task_id)
 
         task.delete()
@@ -179,6 +201,13 @@ class TaskView(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def list_subtasks(self, request):
+        if not request.user.is_active:
+            return api_response(
+                message="Your account is inactive. Please contact admin.",
+                status_code=status.HTTP_403_FORBIDDEN,
+                success=False
+            )
+
         task_title = request.query_params.get('task_title')
         if not task_title:
             return api_response(
@@ -199,6 +228,13 @@ class TaskView(viewsets.ViewSet):
         
     @action(detail=False, methods=['patch'], permission_classes=[IsDepartmentLeader])
     def reassign_subtask(self, request):
+        if not request.user.is_active:
+            return api_response(
+                message="Your account is inactive. Please contact admin.",
+                status_code=status.HTTP_403_FORBIDDEN,
+                success=False
+            )
+
         serializer = ReassignSubTaskSerializer(data=request.data)
         if serializer.is_valid():
             subtask_id = serializer.validated_data['id']
@@ -230,18 +266,21 @@ class TaskView(viewsets.ViewSet):
             errors=serializer.errors
         )
         
-    @action(detail=False,methods=['delete'],url_path="delete/(?P<subtask_id>\d+)",permission_classes=[IsDepartmentLeader])
-    def delete_subtask(self,request,subtask_id):
+    @action(detail=False, methods=['delete'], url_path="delete/(?P<subtask_id>\d+)", permission_classes=[IsDepartmentLeader])
+    def delete_subtask(self, request, subtask_id):
+        if not request.user.is_active:
+            return api_response(
+                message="Your account is inactive. Please contact admin.",
+                status_code=status.HTTP_403_FORBIDDEN,
+                success=False
+            )
+
         subtask = get_object_or_404(SubTask, id=subtask_id)
 
         subtask.delete()
 
         return api_response(
-            message=f"Task {subtask_id} deleted successfully!",
+            message=f"Subtask {subtask_id} deleted successfully!",
             status_code=status.HTTP_200_OK,
             success=True
         )
-    
-    
-
-

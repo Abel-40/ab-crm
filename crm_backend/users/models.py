@@ -11,6 +11,7 @@ class UserManger(BaseUserManager):
     email = self.normalize_email(email)
     user = self.model(email=email,username=username)
     user.set_password(password)
+    user.is_active = False
     user.save(using=self._db)
     return user
   def create_superuser(self,email,password,username):
@@ -50,12 +51,12 @@ class UserProfile(models.Model):
   user = models.OneToOneField(User,on_delete=models.CASCADE,related_name='userprofile')
   address = models.CharField(max_length=200,default='Not provided')
   profile_picture = models.ImageField(upload_to='profile_pictures/',null=True,blank=True)
-  phone_number = models.CharField(max_length=13,default="Not provided")
+  phone_number = models.CharField(default="Not provided")
   role = models.CharField(max_length=2,choices=Role.choices,default=Role.DEPARTMENT_MEMBER)
-  document = models.FileField(upload_to='user_documents/', blank=True, null=True)
-  objects = models.Manager()
+  resume = models.FileField(upload_to='user_resume/', blank=True, null=True)
   department = models.ForeignKey('departments.Departement', on_delete=models.SET_NULL, null=True, blank=True)
-
+  profession = models.CharField(max_length=100)
+  objects = models.Manager()
   def __str__(self):
     return self.user.username
   

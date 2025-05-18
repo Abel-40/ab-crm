@@ -4,7 +4,7 @@ from rest_framework import serializers
 class UserProfileSerializer(serializers.ModelSerializer):
   class Meta:
     model = UserProfile
-    fields = ['id','user', 'address', 'profile_picture', 'phone_number', 'role', 'document']
+    fields = ['id','user', 'address', 'profile_picture', 'phone_number', 'role', 'resume','position']
     read_only_fields = ('user','id')
 
 class UserSerializer(serializers.ModelSerializer):
@@ -30,6 +30,10 @@ class UserSerializer(serializers.ModelSerializer):
         if not attrs.get('password'):
             raise serializers.ValidationError("Please enter a password")
         return attrs
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("This email is already registered.")
+        return value
 
     def get_detail_url(self, obj):
         return obj.get_absolute_url()
@@ -89,7 +93,7 @@ class UpdateUserInfoSerializer(serializers.ModelSerializer):
 class UpadateUserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['address', 'profile_picture', 'phone_number', 'role', 'document']
+        fields = ['address', 'profile_picture', 'phone_number', 'role', 'resume']
 
     def validate(self, attrs):
         if 'role' in attrs:
@@ -99,7 +103,20 @@ class UpadateUserProfileSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         validated_data.pop('role', None)
         return super().update(instance, validated_data)
-      
+class CreateUserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['address', 'profile_picture', 'phone_number','department', 'resume']
+    def validate(self, data):
+      missing_fields = [field for field in self.fields if field not in self.initial_data or self.initial_data.get(field) in [None, '']]
+        
+      if missing_fields:
+            raise serializers.ValidationError(
+                {field: "This field is required." for field in missing_fields}
+            )
+
+      return data
+
 class UserDeletionSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=100)
     

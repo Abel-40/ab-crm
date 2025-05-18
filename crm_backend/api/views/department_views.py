@@ -10,7 +10,7 @@ from ..serializers.task_serializers import CreateTaskSerializer
 from tasks.models import Task
 from utils.api_response import api_response
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser,AllowAny
 from rest_framework import status,viewsets
 from users.models import User,UserProfile
 from django.shortcuts import get_object_or_404
@@ -61,7 +61,12 @@ class DepartmentView(viewsets.ViewSet):
           except ObjectDoesNotExist:
               errors["new_leader_email"] = "User with this email does not exist."
         
-              
+          if not user.is_active:
+            return api_response(
+                message="Selected user account is inactive.",
+                status_code=status.HTTP_403_FORBIDDEN,
+                success=False
+            )
          
 
           if errors:
@@ -94,7 +99,7 @@ class DepartmentView(viewsets.ViewSet):
       )
 
 
-  @action(detail=False,methods=['get'],permission_classes=[IsAdminUser])
+  @action(detail=False,methods=['get'],permission_classes=[AllowAny],authentication_classes=[])
   def get_departments(self,request):
     departments = Departement.objects.all()
     serializer = DepartmentSerializer(departments,many=True)
@@ -145,49 +150,71 @@ class DepartmentView(viewsets.ViewSet):
 )
 
 
-  @action(detail=False,methods=['post'],permission_classes=[IsAdminUser])
-  def assign_department(self,request):
-    serializer = AssignDepartmentSerializer(data=request.data)
-    if serializer.is_valid():
-      emails = serializer.validated_data['emails']
-      department_id = serializer.validated_data['department_id']
-      admin_password =  serializer.validated_data['admin_password']
-      
-      admin_account = request.user
-      
-      if not admin_account.check_password(admin_password):
-        return api_response(
-            message="Please enter the correct password",
-            status_code=status.HTTP_400_BAD_REQUEST,
-            success=False
-        ) 
-      
-      users_to_add = User.objects.filter(email__in=emails)
-      department = get_object_or_404(Departement, id=department_id)
-      if  department.is_active:
-        total_users_added = users_to_add.count()
-        
-        UserProfile.objects.filter(user__email__in=emails).exclude(department=department).update(department=department)
+  @action(detail=False, methods=['post'], permission_classes=[IsLeaderOrAdmin])
+  def assign_department(self, request):
+      if not request.user.is_active:
+          return api_response(
+              message="Your account is inactive. Please contact admin.",
+              status_code=status.HTTP_403_FORBIDDEN,
+              success=False
+          )
 
-          
-        return api_response(
-            data=[{"email": user.email, "department": department_id} for user in users_to_add],
-            message=f"{total_users_added} user(s) added to department {department_id} successfully!",
-            status_code=status.HTTP_200_OK,
-            success=True
-        )
-      else:
-        return api_response(
-            message=f"{department} is not active department",
-            status_code=status.HTTP_400_BAD_REQUEST,
-            success=False
-        )       
-    return api_response(
-      message="Invalid data",
-      status_code=status.HTTP_400_BAD_REQUEST,
-      success=False,
-      errors=serializer.errors
-  )
+      serializer = AssignDepartmentSerializer(data=request.data)
+      if serializer.is_valid():
+          emails = serializer.validated_data['emails']
+          department_id = serializer.validated_data['department_id']
+          admin_password = serializer.validated_data['admin_password']
+
+          if not request.user.check_password(admin_password):
+              return api_response(
+                  message="Please enter the correct password",
+                  status_code=status.HTTP_400_BAD_REQUEST,
+                  success=False
+              )
+
+          department = get_object_or_404(Departement, id=department_id)
+          if not department.is_active:
+              return api_response(
+                  message=f"{department} is not an active department",
+                  status_code=status.HTTP_400_BAD_REQUEST,
+                  success=False
+              )
+
+          success = []
+          inactive_users = []
+          not_found = []
+
+          for email in emails:
+              try:
+                  user = User.objects.get(email=email)
+                  if not user.is_active:
+                      inactive_users.append(email)
+                      continue
+
+                  UserProfile.objects.filter(user=user).exclude(department=department).update(department=department)
+                  success.append(email)
+
+              except User.DoesNotExist:
+                  not_found.append(email)
+
+          return api_response(
+              data={
+                  "assigned_users": [{"email": email, "department": department_id} for email in success],
+                  "inactive_users": inactive_users,
+                  "not_found_users": not_found,
+              },
+              message=f"{len(success)} user(s) assigned to department {department}.",
+              status_code=status.HTTP_200_OK,
+              success=True
+          )
+
+      return api_response(
+          message="Invalid data",
+          status_code=status.HTTP_400_BAD_REQUEST,
+          success=False,
+          errors=serializer.errors
+      )
+
     
   @action(detail=False,methods=['patch'],permission_classes=[IsLeaderOrAdmin])
   def revoke_department_access(self,request):

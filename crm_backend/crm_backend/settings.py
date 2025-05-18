@@ -25,7 +25,7 @@ import environ
 # Initialize environment variables
 env = environ.Env()
 # Reading .env file
-environ.Env.read_env()
+env.read_env(BASE_DIR/'.env')
 SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -47,10 +47,13 @@ INSTALLED_APPS = [
     'departments',
     'tasks',
     'performance',
-    'notifications'
+    'notifications',
+    'corsheaders',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -127,8 +130,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
-MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR,'media')
+MEDIA_URL = '/media/'
 
 AUTH_USER_MODEL = 'users.User'
 
@@ -152,5 +155,17 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=50),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=50),
 }
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  
+    "http://localhost:5174"
+]
+
+CSRF_COOKIE_SAMESITE = 'Strict'
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+
+# CORS_ALLOW_ALL_ORIGINS = True
